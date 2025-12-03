@@ -16,27 +16,29 @@ import AttacksTell from "./pages/AttacksTell";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <FiltersProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout><Overview /></Layout>} />
-            <Route path="/threat-intel" element={<Layout><ThreatIntel /></Layout>} />
-            <Route path="/incidents" element={<Layout><Incidents /></Layout>} />
-            <Route path="/sensors" element={<Layout><Sensors /></Layout>} />
-            <Route path="/report" element={<Layout><Report /></Layout>} />
-            <Route path="/attacks-tell" element={<Layout><AttacksTell /></Layout>} />
-            <Route path="/settings" element={<Layout><Settings /></Layout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </FiltersProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <FiltersProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout><Overview /></Layout>} />
+              <Route path="/threat-intel" element={<Layout><ThreatIntel /></Layout>} />
+              <Route path="/incidents" element={<Layout><Incidents /></Layout>} />
+              <Route path="/sensors" element={<Layout><Sensors /></Layout>} />
+              <Route path="/report" element={<Layout><Report /></Layout>} />
+              <Route path="/attacks-tell" element={<Layout><AttacksTell /></Layout>} />
+              <Route path="/settings" element={<Layout><Settings /></Layout>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </FiltersProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

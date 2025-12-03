@@ -70,22 +70,11 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = direction;
   }, [direction]);
 
-  // Auto-refresh logic
+  // Auto-refresh logic handled by individual hooks via React Query polling.
+  // We deliberately avoid shifting the time window here to prevent unnecessary re-renders.
   useEffect(() => {
-    if (autoRefresh === 'off') return;
-
-    const ms =
-      autoRefresh === '30s' ? 30000 : autoRefresh === '60s' ? 60000 : 5 * 60000;
-
-    const interval = setInterval(() => {
-      // Update time range if it's a preset
-      if (timeRange.preset && timeRange.preset !== 'custom') {
-        setTimeRangeState(getTimeRangeFromPreset(timeRange.preset));
-      }
-    }, ms);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh, timeRange.preset]);
+    return;
+  }, [autoRefresh]);
 
   const setTimeRange = (range: TimeRange) => {
     setTimeRangeState(range);
@@ -124,6 +113,22 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     } else {
       params.delete('eventTypes');
     }
+    if (newFilters.usernameQuery) {
+      params.set('user', newFilters.usernameQuery);
+    } else {
+      params.delete('user');
+    }
+    if (newFilters.passwordQuery) {
+      params.set('pass', newFilters.passwordQuery);
+    } else {
+      params.delete('pass');
+    }
+    if (newFilters.ipAddress) {
+      params.set('ip', newFilters.ipAddress);
+    } else {
+      params.delete('ip');
+    }
+    // Backwards-compat: preserved when present
     if (newFilters.credentialsQuery) {
       params.set('creds', newFilters.credentialsQuery);
     } else {

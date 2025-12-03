@@ -9,6 +9,7 @@ import type {
   PaginatedResponse,
   TISummary,
 } from '@/types';
+import { generateHoneypotEvents } from '../generator';
 
 type RawHoneypotRecord = {
   id?: string;
@@ -97,8 +98,7 @@ type RawHoneypotRecord = {
 };
 
 const ndjsonModules = import.meta.glob('../honypots/*.ndjson', {
-  query: '?raw',
-  import: 'default',
+  as: 'raw',
   eager: true,
 }) as Record<string, string>;
 const ndjsonSources = Object.values(ndjsonModules);
@@ -451,22 +451,25 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
   });
 }
 
-let cachedEvents: HoneypotEvent[] | null = null;
+let cached: { data: HoneypotEvent[]; ts: number } | null = null;
 
 async function loadEvents(): Promise<HoneypotEvent[]> {
-  if (cachedEvents) return cachedEvents;
+  const now = Date.now();
+  if (cached && now - cached.ts < 10000) return cached.data;
 
   try {
     const parsedRecords = ndjsonSources.flatMap(parseNdjson);
-    cachedEvents = parsedRecords
-      .flatMap(attemptsToEvents)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-    return cachedEvents;
+    const mapped = parsedRecords.flatMap(attemptsToEvents);
+    const data = mapped.length > 0
+      ? mapped.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      : generateHoneypotEvents(250).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    cached = { data, ts: now };
+    return data;
   } catch (error) {
     console.error('Failed to load honeypot data, returning empty dataset:', error);
-    cachedEvents = [];
-    return cachedEvents;
+    const data = generateHoneypotEvents(250);
+    cached = { data, ts: now };
+    return data;
   }
 }
 
@@ -506,6 +509,33 @@ function filterEvents(
       if (!matches) return false;
     }
 
+    if (filters.ipAddress) {
+      const q = filters.ipAddress.trim();
+      if (q) {
+        const match = event.src_ip?.includes(q);
+        if (!match) return false;
+      }
+    }
+
+    if (filters.usernameQuery) {
+      const q = filters.usernameQuery.toLowerCase();
+      const userFields = [event.ssh?.username, event.auth?.username]
+        .filter(Boolean)
+        .map((v) => String(v).toLowerCase())
+        .join(' ');
+      if (!userFields.includes(q)) return false;
+    }
+
+    if (filters.passwordQuery) {
+      const q = filters.passwordQuery.toLowerCase();
+      const passFields = [event.ssh?.password, event.auth?.password]
+        .filter(Boolean)
+        .map((v) => String(v).toLowerCase())
+        .join(' ');
+      if (!passFields.includes(q)) return false;
+    }
+
+    // Backwards-compat combined credentials query
     if (filters.credentialsQuery) {
       const q = filters.credentialsQuery.toLowerCase();
       const creds = [event.ssh?.username, event.ssh?.password, event.auth?.username, event.auth?.password]

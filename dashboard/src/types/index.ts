@@ -47,6 +47,9 @@ export type Filters = {
   protocols: string[];
   countries: string[];
   eventTypes?: string[];
+  ipAddress?: string;
+  usernameQuery?: string;
+  passwordQuery?: string;
   credentialsQuery?: string;
   query?: string;
 };
@@ -84,7 +87,7 @@ export type PaginatedResponse<T> = {
   pageSize: number;
 };
 
-export type AutoRefreshInterval = 'off' | '30s' | '60s' | '5m';
+export type AutoRefreshInterval = 'off' | 'on';
 
 export type Theme = 'dark' | 'light';
 

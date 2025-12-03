@@ -47,7 +47,10 @@ export default function Report() {
     const p = filters.protocols.join(', ') || 'All';
     const c = filters.countries.join(', ') || 'All';
     const e = (filters.eventTypes || []).join(', ') || 'All';
-    return { sensors: s, protocols: p, countries: c, eventTypes: e };
+    const ip = filters.ipAddress || '-';
+    const user = filters.usernameQuery || '-';
+    const pass = filters.passwordQuery || '-';
+    return { sensors: s, protocols: p, countries: c, eventTypes: e, ip, user, pass };
   }, [filters]);
 
   type AttackTell = { attack_id: string; summary: string; more_details?: string };
@@ -149,7 +152,11 @@ export default function Report() {
     const p = filters.protocols.join(', ') || 'All';
     const c = filters.countries.join(', ') || 'All';
     const e = (filters.eventTypes || []).join(', ') || 'All';
-    label(`Filters • Sensors: ${s} • Protocols: ${p} • Countries: ${c} • Event Types: ${e}`, y); y += 24; line(y); y += 20;
+    const ip = filters.ipAddress || '-';
+    const user = filters.usernameQuery || '-';
+    const pass = filters.passwordQuery || '-';
+    label(`Filters • Sensors: ${s} • Protocols: ${p} • Countries: ${c} • Event Types: ${e}`, y); y += 18;
+    label(`Advanced • IP: ${ip} • Username: ${user} • Password: ${pass}` , y); y += 24; line(y); y += 20;
 
     heading('Summary', y); y += 18;
     const box = (title: string, value: string | number, bx: number, by: number) => {
@@ -223,11 +230,15 @@ export default function Report() {
         const p = filters.protocols.join(', ') || 'All';
         const c = filters.countries.join(', ') || 'All';
         const e = (filters.eventTypes || []).join(', ') || 'All';
+        const ip = filters.ipAddress || '-';
+        const user = filters.usernameQuery || '-';
+        const pass = filters.passwordQuery || '-';
         const allLines: string[] = [];
         const pushHeading = (t: string) => { allLines.push(''); allLines.push(t); allLines.push(''); };
         allLines.push('Smart Honeypot - Attacks Report');
         allLines.push(`Time Range: ${new Date(timeRange.from).toLocaleString()} -> ${new Date(timeRange.to).toLocaleString()}`);
         allLines.push(`Filters: Sensors ${s} | Protocols ${p} | Countries ${c} | Event Types ${e}`);
+        allLines.push(`Advanced: IP ${ip} | Username ${user} | Password ${pass}`);
         allLines.push('');
         pushHeading('Summary');
         allLines.push(`Attacks ${summary?.totalAttacks ?? '-'}, Attempts ${summary?.totalAttempts ?? '-'}, IPs ${summary?.uniqueIps ?? '-'}, Countries ${summary?.uniqueCountries ?? '-'}`);
@@ -306,6 +317,9 @@ export default function Report() {
           <p className="text-sm">Protocols: {filterSummary.protocols}</p>
           <p className="text-sm">Countries: {filterSummary.countries}</p>
           <p className="text-sm">Event Types: {filterSummary.eventTypes}</p>
+          <p className="text-sm">IP: {filterSummary.ip}</p>
+          <p className="text-sm">Username: {filterSummary.user}</p>
+          <p className="text-sm">Password: {filterSummary.pass}</p>
         </div>
       </div>
 

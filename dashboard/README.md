@@ -1,73 +1,9 @@
-# Welcome to your Lovable project
+Smart Honeypot Threat Intelligence Dashboard
 
-## Project info
+This project is a custom threat-intelligence dashboard designed to visualize and analyze attacks collected from multiple honeypot sensors, including Cowrie, Dionaea, and OpenCanary. Each sensor runs on its own VM and produces raw logs, which are later cleaned, enriched, and converted into NDJSON files using custom Python parsers. These parsers remove irrelevant events, classify attack types, assign unique attack IDs, and enrich every entry with GeoIP and AbuseIPDB information. Private IPs used for lab testing are automatically labeled as originating from Muscat, Oman to keep the data consistent.
 
-**URL**: https://lovable.dev/projects/b27f3fde-ed21-4c4a-912d-af7499c0c2a0
+The dashboard does not rely on a backend or API. Instead, it directly reads the NDJSON files stored inside the project folder and updates the interface automatically using JavaScript’s setInterval function. This allows the dashboard to refresh every few seconds without requiring the user to reload the page, making it lightweight, responsive, and easy to deploy on any machine.
 
-## How can I edit this code?
+The interface provides an overview of recent attacks, global attack distribution, top statistics, and a dedicated attack map that shows the geographic origin of each event, including a special green marker for private IPs mapped to Oman. The advanced search bar allows filtering by sensor, country, attack type, time, or keyword, giving the user SIEM-style control while keeping the design simple. When an attack is selected, the details page presents the full storyline, including login attempts, commands, timestamps, and enrichment data.
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/b27f3fde-ed21-4c4a-912d-af7499c0c2a0) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b27f3fde-ed21-4c4a-912d-af7499c0c2a0) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This setup makes the dashboard ideal for research, education, and small SOC environments that want a clear, self-contained honeypot monitoring tool with no external dependencies. Simply place your NDJSON files in the project directory, open the dashboard in a browser, and it begins working immediately.

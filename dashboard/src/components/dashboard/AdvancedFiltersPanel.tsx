@@ -19,7 +19,9 @@ export function AdvancedFiltersPanel() {
   const [toStr, setToStr] = useState<string>('');
   const [eventType, setEventType] = useState<string>((filters.eventTypes && filters.eventTypes[0]) || 'all');
   const [country, setCountry] = useState<string>(filters.countries[0] || '');
-  const [creds, setCreds] = useState<string>(filters.credentialsQuery || '');
+  const [ip, setIp] = useState<string>(filters.ipAddress || '');
+  const [username, setUsername] = useState<string>(filters.usernameQuery || '');
+  const [password, setPassword] = useState<string>(filters.passwordQuery || '');
 
   const dataAdapter = getAdapter(adapter);
   const computedFilters = useMemo(() => ({
@@ -38,7 +40,9 @@ export function AdvancedFiltersPanel() {
     newFilters.sensors = sensor === 'all' ? [] : [sensor];
     newFilters.eventTypes = eventType === 'all' ? [] : [eventType];
     newFilters.countries = country ? [country] : [];
-    newFilters.credentialsQuery = creds || undefined;
+    newFilters.ipAddress = ip || undefined;
+    newFilters.usernameQuery = username || undefined;
+    newFilters.passwordQuery = password || undefined;
     setFilters(newFilters);
 
     if (datePreset === 'custom' && fromStr && toStr) {
@@ -108,9 +112,19 @@ export function AdvancedFiltersPanel() {
               <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g., OM" />
             </div>
 
-            <div className="md:col-span-3">
-              <label className="text-xs text-muted-foreground">Credentials used</label>
-              <Input value={creds} onChange={(e) => setCreds(e.target.value)} placeholder="username/password contains" />
+            <div>
+              <label className="text-xs text-muted-foreground">Source IP Address</label>
+              <Input value={ip} onChange={(e) => setIp(e.target.value)} placeholder="e.g., 192.168.1.10" />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">Username contains</label>
+              <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g., admin" />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">Password contains</label>
+              <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="e.g., 1234" />
             </div>
           </div>
           <div className="mt-4 flex gap-2 justify-end">

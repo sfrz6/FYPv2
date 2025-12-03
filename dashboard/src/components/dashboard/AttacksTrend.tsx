@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { Skeleton } from '@/components/ui/skeleton';
 import { ChartCard } from './ChartCard';
 import { useAttacksOverTimeWithRange } from '@/hooks/useHoneypotData';
 import { downloadCSV, downloadJSON } from '@/utils/export';
@@ -67,13 +66,7 @@ export function AttacksTrend() {
 
   const colors = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
 
-  if (isLoading) {
-    return (
-      <ChartCard title="Attacks Over Time" description="Time series of attack events">
-        <Skeleton className="h-[300px] w-full" />
-      </ChartCard>
-    );
-  }
+  
 
   return (
     <ChartCard
@@ -113,10 +106,14 @@ export function AttacksTrend() {
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={chartData}>
           <defs>
+            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={colors[0]} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={colors[0]} stopOpacity={0.1} />
+            </linearGradient>
             {sensors.map((sensor, idx) => (
               <linearGradient key={sensor} id={`color${sensor}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={colors[idx % colors.length]} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={colors[idx % colors.length]} stopOpacity={0.1} />
+                <stop offset="5%" stopColor={colors[(idx + 1) % colors.length]} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={colors[(idx + 1) % colors.length]} stopOpacity={0.1} />
               </linearGradient>
             ))}
           </defs>
@@ -135,13 +132,20 @@ export function AttacksTrend() {
             }}
           />
           <Legend />
+          <Area
+            key="total"
+            type="monotone"
+            dataKey="total"
+            stroke={colors[0]}
+            fill="url(#colorTotal)"
+          />
           {sensors.map((sensor, idx) => (
             <Area
               key={sensor}
               type="monotone"
               dataKey={sensor}
               stackId="1"
-              stroke={colors[idx % colors.length]}
+              stroke={colors[(idx + 1) % colors.length]}
               fill={`url(#color${sensor})`}
             />
           ))}

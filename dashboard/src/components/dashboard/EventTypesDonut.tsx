@@ -5,7 +5,7 @@ import { ChartCard } from './ChartCard';
 import { useRecentEvents } from '@/hooks/useHoneypotData';
 import { useFilters } from '@/context/FiltersContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAdapter } from '@/data';
 import { downloadCSV, downloadJSON } from '@/utils/export';
 
@@ -19,17 +19,26 @@ const COLORS = [
 
 export function EventTypesDonut() {
   const { data: recent } = useRecentEvents(0, 1000);
-  const { timeRange, filters, adapter } = useFilters();
+  const { timeRange, filters, adapter, autoRefresh } = useFilters();
   const dataAdapter = getAdapter(adapter);
   const [selectedSensor, setSelectedSensor] = useState<string>('all');
 
+  const queryClient = useQueryClient();
+  const k = ['eventTypes-local', timeRange, filters, adapter, selectedSensor];
   const { data, isLoading } = useQuery({
-    queryKey: ['eventTypes-local', timeRange, filters, adapter, selectedSensor],
+    queryKey: k,
     queryFn: () => {
       const localFilters = selectedSensor === 'all' ? filters : { ...filters, sensors: [selectedSensor] };
       return dataAdapter.getEventTypes(timeRange, localFilters);
     },
     staleTime: 30000,
+    refetchInterval: autoRefresh === 'on' ? 15000 : false,
+    refetchOnWindowFocus: false,
+    select: (incoming) => {
+      const prev = queryClient.getQueryData(k) as any[] | undefined;
+      if (prev && incoming && prev.length === incoming.length) return prev;
+      return incoming;
+    },
   });
 
   const chartData = useMemo(() => {
@@ -53,7 +62,7 @@ export function EventTypesDonut() {
     setSelectedSensor(value);
   };
 
-  if (isLoading) {
+  if (isLoading && (!data || data.length === 0)) {
     return (
       <ChartCard title="Attack Types" description="Distribution of attack types">
         <Skeleton className="h-[300px] w-full" />

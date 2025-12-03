@@ -25,9 +25,7 @@ const timePresets: { value: TimePreset; label: string }[] = [
 
 const refreshIntervals: { value: AutoRefreshInterval; label: string }[] = [
   { value: 'off', label: 'Off' },
-  { value: '30s', label: '30s' },
-  { value: '60s', label: '60s' },
-  { value: '5m', label: '5m' },
+  { value: 'on', label: 'On' },
 ];
 
 export function TopBar() {

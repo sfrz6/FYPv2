@@ -8,7 +8,7 @@ import { EventDetailsDrawer } from './EventDetailsDrawer';
 import { useRecentEvents } from '@/hooks/useHoneypotData';
 import { useFilters } from '@/context/FiltersContext';
 import { getAdapter } from '@/data';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDateTime } from '@/utils/date';
 import { downloadCSV } from '@/utils/export';
 import { HoneypotEvent } from '@/types';
@@ -24,22 +24,33 @@ export function RecentEventsTable() {
   const [query, setQuery] = useState('');
   const [from, setFrom] = useState<string>('');
   const [to, setTo] = useState<string>('');
-  const { timeRange, filters, adapter } = useFilters();
+  const { timeRange, filters, adapter, autoRefresh } = useFilters();
   const dataAdapter = getAdapter(adapter);
+  const queryClient = useQueryClient();
 
   const localRange = useMemo(() => {
     if (from && to) return { from: new Date(from).toISOString(), to: new Date(to).toISOString() };
     return timeRange;
   }, [from, to, timeRange]);
 
+  const key = ['recentEvents-local', localRange, filters, query, page, 20, adapter];
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['recentEvents-local', localRange, filters, query, page, 20, adapter],
+    queryKey: key,
     queryFn: () => {
       const localFilters = { ...filters, query };
       return dataAdapter.getRecentEvents(localRange, localFilters, page, 20);
     },
     staleTime: 30000,
     keepPreviousData: true,
+    refetchInterval: autoRefresh === 'on' ? 15000 : false,
+    refetchOnWindowFocus: false,
+    select: (incoming) => {
+      const prev = queryClient.getQueryData(key) as any;
+      if (prev && incoming) {
+        if (prev.total === incoming.total && prev.rows?.[0]?.id === incoming.rows?.[0]?.id) return prev;
+      }
+      return incoming;
+    },
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -93,11 +104,6 @@ if (!data && isLoading) {
         </div>
       </form>
       <div className="rounded-md border relative">
-        {isFetching && (
-          <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] flex items-center justify-center z-10">
-            <span className="text-xs text-muted-foreground">Updating…</span>
-          </div>
-        )}
         <Table>
           <TableHeader>
             <TableRow>
