@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* SOC Dark Theme - Cyber Security Dashboard */
+    --background: 220 15% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 14% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 14% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Emerald primary */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 160 84% 49%;
+
+    /* Cyan accent */
+    --secondary: 192 82% 51%;
+    --secondary-foreground: 220 15% 8%;
+
+    --muted: 220 14% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Purple accent */
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 14% 20%;
+    --input: 220 14% 20%;
+    --ring: 160 84% 39%;
+
+    --radius: 1rem;
+
+    /* Custom gradients for SOC theme */
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%), hsl(192 82% 51%));
+    --gradient-glow: linear-gradient(135deg, hsl(160 84% 49% / 0.2), hsl(271 91% 65% / 0.2));
+    --gradient-cyber: linear-gradient(180deg, hsl(220 15% 8%), hsl(220 15% 10%));
+    
+    /* Shadows with glow effect */
+    --shadow-card: 0 4px 20px -2px hsl(160 84% 39% / 0.1);
+    --shadow-glow: 0 0 30px hsl(160 84% 49% / 0.3);
+    --shadow-hover: 0 8px 30px -4px hsl(160 84% 39% / 0.2);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Sidebar */
+    --sidebar-background: 220 15% 9%;
+    --sidebar-foreground: 215 20% 65%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 14% 18%;
+    --sidebar-ring: 160 84% 39%;
+  }
+
+  .light {
+    /* Light mode fallback (optional) */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 192 82% 51%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Leaflet map dark theme */
+@layer components {
+  .leaflet-container {
+    @apply bg-background;
+  }
+  
+  .cyber-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .card-hover {
+    transition: var(--transition-smooth);
+  }
+  
+  .card-hover:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+}
