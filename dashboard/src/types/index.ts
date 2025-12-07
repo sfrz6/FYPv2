@@ -30,7 +30,7 @@ export type HoneypotEvent = {
     abuseipdb?: { score: number };
     virustotal?: { reputation: number; detections: number };
     malwarebazaar?: { family?: string; hash?: string; last_seen?: string };
-    mitre?: Array<{ tactic: string; technique: string }>;
+    mitre?: Array<{ tactic: string; technique: string; id?: string }>;
   };
 };
 

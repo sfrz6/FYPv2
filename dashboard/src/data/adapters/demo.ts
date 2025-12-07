@@ -22,6 +22,7 @@ type RawHoneypotRecord = {
   dst_port?: number | string;
   protocol?: string;
   event_type?: string;
+  attack_type?: string;
   start_time?: string;
   end_time?: string;
   total_attempts?: number;
@@ -30,6 +31,8 @@ type RawHoneypotRecord = {
   session_id?: string;
   attack_types?: string[];
   mitre?: { ids?: string[]; names?: string[] };
+  mitre_attack?: Array<{ tactic?: string; technique?: string; id?: string }>|string[];
+  mtre_attack?: Array<{ tactic?: string; technique?: string; id?: string }>|string[];
   events?: Array<{
     timestamp?: string;
     eventid: string;
@@ -390,6 +393,55 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
       }
 
       return base;
+    });
+  }
+
+  const isDionaea = (record.sensor_type === 'dionaea') || (!!record.attack_id && !!record.events && record.events.length > 0 && record.protocol === 'ftp');
+  if (isDionaea && (record.events && record.events.length > 0)) {
+    const attackId = record.attack_id || record.id || `att-${index}`;
+    const portNum = Number(record.dst_port) || 0;
+    const proto = record.protocol ? record.protocol.toLowerCase() : 'unknown';
+    const attemptsCount = Number(record.total_attempts) || record.events.length;
+    if (attemptsCount > 0) attackAttemptCounts.set(String(attackId), attemptsCount);
+
+    const mitreSrc = (record.mtre_attack && (record.mtre_attack as any[]).length > 0)
+      ? (record.mtre_attack as any[])
+      : ((record.mitre_attack && (record.mitre_attack as any[]).length > 0) ? (record.mitre_attack as any[]) : undefined);
+    const mitre = Array.isArray(mitreSrc) && mitreSrc.length > 0
+      ? mitreSrc.map((m) => {
+          if (typeof m === 'string') {
+            return { tactic: m, technique: m };
+          }
+          const t = m.tactic || '';
+          const tech = m.technique || '';
+          const id = (m as any).id || undefined;
+          return { tactic: t || tech || 'Execution', technique: tech || t || 'Brute Force', id };
+        })
+      : undefined;
+
+    return record.events.map((ev, i) => {
+      const ts = normalizeTimestamp(ev.timestamp || record.timestamp || record.start_time);
+      return {
+        id: `${attackId}-${index}-${i}`,
+        original_id: String(attackId),
+        timestamp: ts,
+        sensor: record.sensor || 'dionaea',
+        sensor_type: 'dionaea',
+        src_ip: record.src_ip || 'unknown',
+        dst_port: portNum,
+        protocol: proto,
+        event_type: record.attack_type || 'unknown',
+        geoip: mapGeo(record.geoip),
+        ssh: undefined,
+        http: mapHttp(record),
+        ti: {
+          abuseipdb: mapThreatIntel(record)?.abuseipdb,
+          mitre,
+        },
+        raw: ev,
+        command: undefined,
+        attack: record.attack_type || (record.attack_types && record.attack_types.length > 0 ? record.attack_types.join(', ') : record.event_type || proto),
+      };
     });
   }
 

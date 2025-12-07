@@ -397,6 +397,9 @@ export function EventDetailsDrawer({ event, open, onOpenChange }: EventDetailsDr
                             <div>
                               <div className="font-medium">{mitre.tactic}</div>
                               <div className="text-xs text-muted-foreground">Technique: {mitre.technique}</div>
+                              {mitre.id && (
+                                <div className="text-xs text-muted-foreground">Technique ID: {mitre.id}</div>
+                              )}
                             </div>
                             <Badge variant="secondary">{mitre.technique}</Badge>
                           </div>
