@@ -56,7 +56,7 @@ export function AdvancedFiltersPanel() {
   };
 
   const handleReport = () => {
-    navigate('/report');
+    navigate('/report', { state: { fromAdvanced: true } });
   };
 
   return (
