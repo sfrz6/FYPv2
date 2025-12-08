@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import cowrieRaw from '@/data/attacktell/cowrieattacktell.ndjson?raw';
+import opencanaryRaw from '@/data/attacktell/opencanaryattacktell.ndjson?raw';
+import dionaeaRaw from '@/data/attacktell/dionaeaattacktell.ndjson?raw';
 import { Button } from '@/components/ui/button';
 import { useFilters } from '@/context/FiltersContext';
 import { getAdapter } from '@/data';
@@ -56,12 +58,26 @@ export default function Report() {
   type AttackTell = { attack_id: string; summary: string; more_details?: string };
   type LabelCount = { label: string; count: number };
   const attacksTell: AttackTell[] = useMemo(() => {
-    const selected = filters.sensors;
-    const includeCowrie = selected.length === 0 || selected.includes('cowrie');
-    if (!includeCowrie) return [];
-    const lines = (cowrieRaw || '').trim().split('\n').filter(Boolean);
-    const items = lines.map((l) => { try { return JSON.parse(l) as AttackTell; } catch { return null; } }).filter(Boolean) as AttackTell[];
-    return items.slice(-6).reverse();
+    const SOURCES: Record<string, string> = {
+      cowrie: cowrieRaw,
+      opencanary: opencanaryRaw,
+      dionaea: dionaeaRaw,
+    };
+    const parse = (raw: string): AttackTell[] => (raw || '')
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => { try { return JSON.parse(l) as AttackTell; } catch { return null; } })
+      .filter(Boolean) as AttackTell[];
+    const ts = (id: string): number => {
+      const m = id.match(/-(\d{14})$/);
+      return m ? Number(m[1]) : 0;
+    };
+    const selected = filters.sensors && filters.sensors.length ? filters.sensors : ['all'];
+    const keys = selected.includes('all') ? Object.keys(SOURCES) : selected.filter((k) => k in SOURCES);
+    const combined = keys.flatMap((k) => parse(SOURCES[k] || ''));
+    const ordered = combined.slice().sort((a, b) => ts(b.attack_id) - ts(a.attack_id));
+    return ordered.slice(0, 6);
   }, [filters.sensors]);
 
   const loadJsPDF = (): Promise<any> => new Promise((resolve, reject) => {
@@ -375,7 +391,7 @@ export default function Report() {
       <div className="rounded-lg border p-4">
         <h2 className="text-lg font-semibold mb-2">Attacks tell (summaries)</h2>
         {attacksTell.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No attacks tell entries for selected sensor.</p>
+          <p className="text-sm text-muted-foreground">No attacks tell entries for selected sensors.</p>
         ) : (
           <ol className="text-sm list-decimal ml-5">
             {attacksTell.map((a) => (
