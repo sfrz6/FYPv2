@@ -419,7 +419,7 @@ export function EventDetailsDrawer({ event, open, onOpenChange }: EventDetailsDr
             <TabsContent value="raw">
               <div className="bg-muted rounded-lg p-4">
                 <pre className="text-xs font-mono overflow-auto max-h-[500px]">
-                  {JSON.stringify(event, null, 2)}
+                  {JSON.stringify((event as any).raw ?? event, null, 2)}
                 </pre>
               </div>
             </TabsContent>

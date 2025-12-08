@@ -31,8 +31,8 @@ type RawHoneypotRecord = {
   session_id?: string;
   attack_types?: string[];
   mitre?: { ids?: string[]; names?: string[] };
-  mitre_attack?: Array<{ tactic?: string; technique?: string; id?: string }>|string[];
-  mtre_attack?: Array<{ tactic?: string; technique?: string; id?: string }>|string[];
+  mitre_attack?: { tactic?: string; technique_id?: string; technique_name?: string; technique?: string; id?: string } | Array<{ tactic?: string; technique?: string; id?: string }>|string[];
+  mtre_attack?: { tactic?: string; technique_id?: string; technique_name?: string; technique?: string; id?: string } | Array<{ tactic?: string; technique?: string; id?: string }>|string[];
   events?: Array<{
     timestamp?: string;
     eventid: string;
@@ -268,7 +268,7 @@ function toHoneypotEvent(record: RawHoneypotRecord, index: number): HoneypotEven
 function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEvent[] {
   // special handling for cowrie sessions aggregated attacks
   const isCowrieBF = (record.doc_type === 'bruteforce_campaign') ||
-    (record.attack_id?.startsWith('bf-'));
+    (record.attack_id?.startsWith('bf'));
   if (isCowrieBF) {
     const allEvents = [
       ...(record.events || []),
@@ -278,11 +278,27 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
     if (allEvents.length > 0) {
       const attackId = record.attack_id || record.id || `bf-${index}`;
       const portNum = 22;
-      const attemptsCount = Number(record.total_login_attempts) || allEvents.length;
+      const attemptsCount = (Number(record.total_login_attempts) || 0)
+        + (Number(record.total_commands) || 0)
+        + (Number(record.total_downloads) || 0)
+        || allEvents.length;
       if (attemptsCount > 0) attackAttemptCounts.set(String(attackId), attemptsCount);
 
       return allEvents.map((ev, i) => {
         const ts = normalizeTimestamp(ev.timestamp || record.start_time || record.timestamp);
+        const evMitre = (ev as any)?.mitre as any;
+        const mitre = evMitre?.names?.length
+          ? evMitre.names.map((name: string) => {
+              const parts = String(name).split(':');
+              const tactic = parts.length > 1 ? parts[0] : name;
+              const technique = parts.length > 1 ? parts.slice(1).join(':').trim() : name;
+              const id = (evMitre.ids && evMitre.ids[0]) || undefined;
+              return { tactic: tactic || technique || 'Credential Access', technique: technique || tactic || 'Brute Force', id };
+            })
+          : [
+              { tactic: 'Credential Access', technique: 'Brute Force' },
+            ];
+        const atkTypes = (ev as any)?.attack_types as string[] | undefined;
         return {
           id: `${attackId}-${index}-${i}`,
           original_id: String(attackId),
@@ -298,14 +314,12 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
           http: undefined,
           ti: {
             abuseipdb: mapThreatIntel(record)?.abuseipdb,
-            mitre: [
-              { tactic: 'Credential Access', technique: 'Brute Force' },
-            ],
+            mitre,
           },
-          raw: record.raw,
+          raw: { ...ev, attack_types: atkTypes && atkTypes.length > 0 ? atkTypes : ['ssh_bruteforce'] },
           auth: undefined,
           command: ev.command ? { raw: ev.command, category: 'ssh' } : undefined,
-          attack: 'ssh bruteforce',
+          attack: (atkTypes && atkTypes.length > 0) ? atkTypes.join(', ') : 'ssh_bruteforce',
         };
       });
     }
@@ -321,7 +335,9 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
       .filter((ev) => ev && ev.eventid !== 'cowrie.session.closed');
 
     // track attempts count from session field
-    const attemptsCount = (Number(record.total_login_attempts) || 0) + (Number(record.total_commands) || 0);
+    const attemptsCount = (Number(record.total_login_attempts) || 0)
+      + (Number(record.total_commands) || 0)
+      + (Number(record.total_downloads) || 0);
     if (attemptsCount > 0) attackAttemptCounts.set(String(attackId), attemptsCount);
 
     // vt lookup from session downloads
@@ -332,12 +348,19 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
       if (d.url) dlIndex.set(d.url, d);
     });
 
-    const mitre = record.mitre?.names?.length
-      ? record.mitre!.names!.map((name) => ({ tactic: name.split(':')[0] || name, technique: name }))
-      : [{ tactic: 'Execution', technique: 'Command and Control' }];
-
     return all.map((ev, i) => {
       const ts = normalizeTimestamp(ev.timestamp || record.start_time || record.timestamp);
+      const evMitre = (ev as any)?.mitre as any;
+      const mitre = evMitre?.names?.length
+        ? evMitre.names.map((name: string) => {
+            const parts = String(name).split(':');
+            const tactic = parts.length > 1 ? parts[0] : name;
+            const technique = parts.length > 1 ? parts.slice(1).join(':').trim() : name;
+            const id = (evMitre.ids && evMitre.ids[0]) || undefined;
+            return { tactic: tactic || technique || 'Execution', technique: technique || tactic || 'Command and Control', id };
+          })
+        : undefined;
+      const atkTypes = (ev as any)?.attack_types as string[] | undefined;
       const base: HoneypotEvent = {
         id: `${attackId}-${index}-${i}`,
         original_id: String(attackId),
@@ -350,9 +373,11 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
         event_type: 'ssh_command',
         geoip: mapGeo(record.geoip),
         ti: { abuseipdb: mapThreatIntel(record)?.abuseipdb, mitre },
-        attack: (record.attack_types && record.attack_types.length > 0)
-          ? record.attack_types.join(', ')
-          : 'ssh interactive session',
+        attack: (atkTypes && atkTypes.length > 0)
+          ? atkTypes.join(', ')
+          : (record.attack_types && record.attack_types.length > 0)
+            ? record.attack_types.join(', ')
+            : 'ssh interactive session',
         raw: ev,
       };
 
@@ -366,7 +391,7 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
       }
 
       if (ev.eventid === 'cowrie.command.input') {
-        const derived = (ev.attack_types && ev.attack_types[0]) || undefined;
+        const derived = (atkTypes && atkTypes[0]) || undefined;
         const mappedType = derived
           ? derived
           : 'ssh_command';
@@ -404,20 +429,24 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
     const attemptsCount = Number(record.total_attempts) || record.events.length;
     if (attemptsCount > 0) attackAttemptCounts.set(String(attackId), attemptsCount);
 
-    const mitreSrc = (record.mtre_attack && (record.mtre_attack as any[]).length > 0)
-      ? (record.mtre_attack as any[])
-      : ((record.mitre_attack && (record.mitre_attack as any[]).length > 0) ? (record.mitre_attack as any[]) : undefined);
-    const mitre = Array.isArray(mitreSrc) && mitreSrc.length > 0
-      ? mitreSrc.map((m) => {
-          if (typeof m === 'string') {
-            return { tactic: m, technique: m };
-          }
-          const t = m.tactic || '';
-          const tech = m.technique || '';
-          const id = (m as any).id || undefined;
-          return { tactic: t || tech || 'Execution', technique: tech || t || 'Brute Force', id };
-        })
-      : undefined;
+    let mitre: { tactic: string; technique: string; id?: string }[] | undefined;
+    const mtSrc = (record.mtre_attack ?? record.mitre_attack) as any;
+    if (Array.isArray(mtSrc) && mtSrc.length > 0) {
+      mitre = mtSrc.map((m: any) => {
+        if (typeof m === 'string') {
+          return { tactic: m, technique: m };
+        }
+        const tactic = m.tactic || '';
+        const technique = m.technique_name || m.technique || '';
+        const id = m.technique_id || m.id || undefined;
+        return { tactic: tactic || technique || 'Execution', technique: technique || tactic || 'Brute Force', id };
+      });
+    } else if (mtSrc && typeof mtSrc === 'object') {
+      const tactic = mtSrc.tactic || '';
+      const technique = mtSrc.technique_name || mtSrc.technique || '';
+      const id = mtSrc.technique_id || mtSrc.id || undefined;
+      mitre = [{ tactic: tactic || technique || 'Execution', technique: technique || tactic || 'Brute Force', id }];
+    }
 
     return record.events.map((ev, i) => {
       const ts = normalizeTimestamp(ev.timestamp || record.timestamp || record.start_time);
@@ -631,14 +660,11 @@ export const demoAdapter = {
     const uniqueCountries = new Set(
       filtered.map((e) => e.geoip?.country_iso_code).filter(Boolean)
     ).size;
-    // total attempts: prefer aggregated counts when available, otherwise fallback to events length
     const filteredAttackIds = Array.from(
       new Set(filtered.map((e) => e.original_id).filter(Boolean) as string[])
     );
-    const aggAttempts = filteredAttackIds.reduce((sum, id) => sum + (attackAttemptCounts.get(id) || 0), 0);
-    const totalAttempts = aggAttempts > 0 ? aggAttempts : filtered.length;
+    const totalAttempts = filtered.length;
 
-    // total attacks: distinct attack ids in the filtered window
     const totalAttacks = filteredAttackIds.length || totalAttempts;
 
     return {
@@ -1066,7 +1092,9 @@ function cowrieSessionToEvent(record: RawHoneypotRecord, index: number): Honeypo
   const portNum = 22;
 
   // track attempt counts from aggregated field
-  const attemptsCount = Number(record.total_login_attempts) || 0;
+  const attemptsCount = (Number(record.total_login_attempts) || 0)
+    + (Number(record.total_commands) || 0)
+    + (Number(record.total_downloads) || 0);
   if (attemptsCount > 0) {
     attackAttemptCounts.set(String(attackId), attemptsCount);
   }
