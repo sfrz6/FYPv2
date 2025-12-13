@@ -6,6 +6,9 @@ export function getTimeRangeFromPreset(preset: TimePreset): TimeRange {
   let from: string;
 
   switch (preset) {
+    case 'all':
+      from = '1970-01-01T00:00:00.000Z';
+      break;
     case '15m':
       from = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
       break;

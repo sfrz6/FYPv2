@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 export default function ThreatIntel() {
   const { data: tiData, isLoading } = useTISummary();
@@ -25,7 +26,7 @@ export default function ThreatIntel() {
           Threat Intelligence
         </h1>
         <p className="text-muted-foreground">
-          Analyze malicious activity using AbuseIPDB, VirusTotal, MalwareBazaar, and MITRE ATT&CK
+          Analyze malicious activity using AbuseIPDB, VirusTotal, MalwareBazaar, MITRE ATT&CK, and OnionSearch
         </p>
       </div>
 
@@ -45,7 +46,7 @@ export default function ThreatIntel() {
         />
         <KpiCard
           title="Malware Families"
-          value={tiData?.topMalwareFamilies?.length || 0}
+          value={tiData?.malwareFamilyCount || 0}
           icon={Bug}
           loading={isLoading}
         />
@@ -54,7 +55,7 @@ export default function ThreatIntel() {
       {/* Top malware uploaded */}
       <ChartCard
         title="Top malware uploaded"
-        description="Most frequently detected malware from VirusTotal"
+        description="Most frequently detected malware"
         icon={Bug}
       >
         {isLoading ? (
@@ -67,23 +68,44 @@ export default function ThreatIntel() {
                   <TableHead>SHA-256</TableHead>
                   <TableHead>URL</TableHead>
                   <TableHead className="text-right">VT Score</TableHead>
+                  <TableHead>Malware Family</TableHead>
+                  <TableHead className="text-right">Darkweb Mention</TableHead>
                   <TableHead className="text-right">Count</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tiData?.topUploads?.map((u) => (
                   <TableRow key={u.hash}>
-                    <TableCell className="font-mono text-xs break-all">{u.hash}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      <Popover>
+                        <PopoverTrigger className="underline decoration-dotted cursor-pointer">
+                          {u.hash?.length > 20 ? `${u.hash.slice(0, 20)}…` : u.hash}
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          <div className="text-xs font-mono break-all">{u.hash}</div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
                     <TableCell className="font-mono text-xs break-all">{u.url || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant="outline">{u.detections ?? 0}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.malwareFamily ? (
+                        <Badge variant="destructive">{u.malwareFamily}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline">{u.darkwebMentions ?? 0}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">{u.count}</TableCell>
                   </TableRow>
                 ))}
                 {(!tiData?.topUploads || tiData.topUploads.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No file downloads detected in this time range
                     </TableCell>
                   </TableRow>

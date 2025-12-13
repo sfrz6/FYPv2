@@ -14,7 +14,7 @@ export function AdvancedFiltersPanel() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [sensor, setSensor] = useState<string>(filters.sensors[0] || 'all');
-  const [datePreset, setDatePreset] = useState<'24h'|'7d'|'30d'|'custom'>(timeRange.preset === 'custom' ? 'custom' : (timeRange.preset as any) || '30d');
+  const [datePreset, setDatePreset] = useState<'all'|'24h'|'7d'|'30d'|'custom'>(timeRange.preset === 'custom' ? 'custom' : (timeRange.preset as any) || '30d');
   const [fromStr, setFromStr] = useState<string>('');
   const [toStr, setToStr] = useState<string>('');
   const [eventType, setEventType] = useState<string>((filters.eventTypes && filters.eventTypes[0]) || 'all');
@@ -80,6 +80,7 @@ export function AdvancedFiltersPanel() {
             <div>
               <label className="text-xs text-muted-foreground">Date range</label>
               <select className="w-full h-9 rounded-md border bg-background px-2" value={datePreset} onChange={(e) => setDatePreset(e.target.value as any)}>
+                <option value="all">All time</option>
                 <option value="24h">Last 24h</option>
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>

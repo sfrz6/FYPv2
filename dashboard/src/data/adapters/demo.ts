@@ -407,13 +407,28 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
         const dl = key ? dlIndex.get(key) : undefined;
         const vt = (dl as any)?.virustotal || (dl as any)?.vt;
         const detections = vt ? (Number(vt.malicious || 0) + Number(vt.suspicious || 0)) : undefined;
-        const ti = base.ti ? { ...base.ti, virustotal: detections !== undefined ? { reputation: 0, detections } : undefined } : undefined;
+        const mb = (dl as any)?.malwarebazaar;
+        const onion = (dl as any)?.onionsearch;
+        const ti = base.ti
+          ? {
+              ...base.ti,
+              virustotal: detections !== undefined ? { reputation: 0, detections } : undefined,
+              malwarebazaar: mb
+                ? {
+                    family: (mb as any)?.family,
+                    hash: ev.sha256 || ev.shasum,
+                    last_seen: (mb as any)?.last_seen,
+                  }
+                : undefined,
+            }
+          : undefined;
         return {
           ...base,
           event_type: 'file_download',
           http: ev.url ? { url: ev.url } : undefined,
           ti,
           command: undefined,
+          raw: { ...ev, onionsearch: onion, malwarebazaar: mb },
         };
       }
 
@@ -475,6 +490,56 @@ function attemptsToEvents(record: RawHoneypotRecord, index: number): HoneypotEve
   }
 
   if (!record.attempts || record.attempts.length === 0) {
+    // OpenCanary: explode raw_events when attempts are absent
+    const isOpenCanary = (record.sensor_type === 'opencanary') || (record.sensor || '').toLowerCase().includes('opencanary');
+    if (isOpenCanary && record.raw_events && record.raw_events.length > 0) {
+      const attackId = record.attack_id || record.id || `oc-${index}`;
+      return record.raw_events.map((ev, i) => {
+        const ts = normalizeTimestamp(
+          (ev as any)?.timestamp
+            || (ev as any)?.utc_time
+            || (ev as any)?.local_time
+            || record.start_time
+            || record.timestamp
+        );
+        const dstPort = Number((ev as any)?.dst_port || record.dst_port) || 0;
+        const protoBase = record.protocol ? record.protocol.toLowerCase() : 'http';
+        const isHttps = protoBase === 'https' || dstPort === 443;
+        const scheme = isHttps ? 'https' : 'http';
+        const host = (ev as any)?.dst_host || (ev as any)?.logdata?.HOSTNAME;
+        const path = (ev as any)?.logdata?.PATH;
+        const url = host ? (host.startsWith('http') ? host : `${scheme}://${host}${path || ''}`) : undefined;
+        const username = (ev as any)?.logdata?.USERNAME || (ev as any)?.username;
+        const password = (ev as any)?.logdata?.PASSWORD || (ev as any)?.password;
+        const evType =
+          (ev as any)?.eventid
+          || (record.attack_types && record.attack_types[0])
+          || record.event_type
+          || 'http_login_attempt';
+
+        return {
+          id: `${attackId}-${index}-${i}`,
+          original_id: String(attackId),
+          timestamp: ts,
+          sensor: record.sensor || 'opencanary',
+          sensor_type: 'opencanary',
+          src_ip: record.src_ip || 'unknown',
+          dst_port: dstPort,
+          protocol: isHttps ? 'https' : (protoBase || 'http'),
+          event_type: String(evType),
+          geoip: mapGeo(record.geoip),
+          ssh: undefined,
+          http: url ? { url } : undefined,
+          ti: mapThreatIntel(record),
+          raw: ev,
+          auth: (username || password) ? { username, password, result: undefined } : undefined,
+          command: undefined,
+          attack: (record.attack_types && record.attack_types.length > 0)
+            ? record.attack_types.join(', ')
+            : record.attack || 'web_login_attempt',
+        };
+      });
+    }
     return [toHoneypotEvent(record, index)];
   }
 
@@ -1007,6 +1072,12 @@ export const demoAdapter = {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // Malware family count: number of events where malwarebazaar is present
+    const malwareFamilyCount = filtered.reduce((sum, e) => {
+      const hasMb = !!(e.ti?.malwarebazaar) || ((e.raw as any)?.malwarebazaar !== null && (e.raw as any)?.malwarebazaar !== undefined);
+      return sum + (hasMb ? 1 : 0);
+    }, 0);
+
     // Top malicious IPs with full TI context
     const ipMap = new Map<string, {
       count: number;
@@ -1054,7 +1125,7 @@ export const demoAdapter = {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    const uploadMap = new Map<string, { hash: string; url?: string; detections?: number; count: number }>();
+    const uploadMap = new Map<string, { hash: string; url?: string; detections?: number; count: number; malwareFamily?: string; darkwebMentions?: number }>();
     filtered
       .filter((e) => e.event_type === 'file_download')
       .forEach((e) => {
@@ -1062,13 +1133,27 @@ export const demoAdapter = {
         const hash = (raw && (raw.sha256 || raw.shasum)) as string | undefined;
         if (!hash) return;
         if (!uploadMap.has(hash)) {
-          uploadMap.set(hash, { hash, url: e.http?.url, detections: e.ti?.virustotal?.detections, count: 0 });
+          uploadMap.set(hash, {
+            hash,
+            url: e.http?.url,
+            detections: e.ti?.virustotal?.detections,
+            count: 0,
+            malwareFamily: e.ti?.malwarebazaar?.family,
+            darkwebMentions: (raw?.onionsearch?.mentions as number | undefined),
+          });
         }
         const entry = uploadMap.get(hash)!;
         entry.count++;
         if (e.http?.url) entry.url = e.http.url;
         if (e.ti?.virustotal?.detections !== undefined) {
           entry.detections = Math.max(entry.detections || 0, e.ti!.virustotal!.detections);
+        }
+        if (e.ti?.malwarebazaar?.family) {
+          entry.malwareFamily = e.ti.malwarebazaar.family;
+        }
+        if ((raw?.onionsearch?.mentions as number | undefined) !== undefined) {
+          const mentions = Number(raw.onionsearch.mentions) || 0;
+          entry.darkwebMentions = Math.max(entry.darkwebMentions || 0, mentions);
         }
       });
 
@@ -1079,6 +1164,7 @@ export const demoAdapter = {
     return {
       maliciousIps,
       avgVTDetections: Math.round(avgVTDetections * 10) / 10,
+      malwareFamilyCount,
       topMalwareFamilies,
       topMaliciousIps,
       topUploads,

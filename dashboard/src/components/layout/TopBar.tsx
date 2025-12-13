@@ -15,6 +15,7 @@ import { getTimeRangeFromPreset } from '@/utils/date';
 import type { TimePreset, AutoRefreshInterval } from '@/types';
 
 const timePresets: { value: TimePreset; label: string }[] = [
+  { value: 'all', label: 'All time' },
   { value: '15m', label: 'Last 15m' },
   { value: '1h', label: 'Last 1h' },
   { value: '24h', label: 'Last 24h' },

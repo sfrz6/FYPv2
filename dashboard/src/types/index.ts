@@ -34,7 +34,7 @@ export type HoneypotEvent = {
   };
 };
 
-export type TimePreset = '15m' | '1h' | '24h' | '7d' | '14d' | '30d' | 'custom';
+export type TimePreset = '15m' | '1h' | '24h' | '7d' | '14d' | '30d' | 'all' | 'custom';
 
 export type TimeRange = {
   from: string;
@@ -96,6 +96,7 @@ export type Direction = 'ltr' | 'rtl';
 export type TISummary = {
   maliciousIps: number;
   avgVTDetections: number;
+  malwareFamilyCount?: number;
   topMalwareFamilies: Array<{ family: string; count: number }>;
   topMaliciousIps: Array<{
     ip: string;
@@ -105,7 +106,14 @@ export type TISummary = {
     malwareFamily?: string;
     mitreTactics?: string[];
   }>;
-  topUploads?: Array<{ hash: string; url?: string; detections?: number; count: number }>;
+  topUploads?: Array<{
+    hash: string;
+    url?: string;
+    detections?: number;
+    count: number;
+    malwareFamily?: string;
+    darkwebMentions?: number;
+  }>;
 };
 
 export type SensorStatus = 'healthy' | 'idle' | 'down';

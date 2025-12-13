@@ -19,7 +19,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 
 export function AttacksTrend() {
-  const [preset, setPreset] = useState<'15m' | '1h' | '24h' | '7d' | '14d' | '30d' | 'custom'>('30d');
+  const [preset, setPreset] = useState<'all' | '15m' | '1h' | '24h' | '7d' | '14d' | '30d' | 'custom'>('30d');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('23:59');
@@ -39,7 +39,7 @@ export function AttacksTrend() {
 
   const chartData = useMemo(() => {
     if (!data) return [];
-    const isLongRange = preset === '7d' || preset === '14d' || preset === '30d' || preset === 'custom';
+    const isLongRange = preset === 'all' || preset === '7d' || preset === '14d' || preset === '30d' || preset === 'custom';
     return data.map((point) => {
       const d = new Date(point.ts);
       const timestamp = isLongRange
@@ -92,6 +92,7 @@ export function AttacksTrend() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All time</SelectItem>
             <SelectItem value="15m">Last 15 minutes</SelectItem>
             <SelectItem value="1h">Last 1 hour</SelectItem>
             <SelectItem value="24h">Last 24 hours</SelectItem>

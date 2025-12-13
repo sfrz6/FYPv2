@@ -353,59 +353,159 @@ export function EventDetailsDrawer({ event, open, onOpenChange }: EventDetailsDr
                   )}
 
                   {/* MalwareBazaar */}
-                  {event.ti.malwarebazaar && (
+                  {(event.ti.malwarebazaar || ((event as any).raw && 'malwarebazaar' in (event as any).raw)) && (() => {
+                    const mb = event.ti.malwarebazaar || ((event as any).raw as any)?.malwarebazaar;
+                    const hash = ((event as any).raw as any)?.sha256 || ((event as any).raw as any)?.shasum;
+                    return (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                          <AlertTriangle className="h-4 w-4" />
+                          MalwareBazaar
+                        </div>
+                        <div className="space-y-4">
+                          {hash && (
+                            <div className="bg-muted rounded-lg p-4">
+                              <div className="text-xs text-muted-foreground mb-2">Hash</div>
+                              <div className="font-mono text-xs break-all">{hash}</div>
+                            </div>
+                          )}
+                          {mb ? (
+                            <>
+                              {mb.family && (
+                                <div className="bg-muted rounded-lg p-4">
+                                  <div className="text-xs text-muted-foreground mb-2">Malware Family</div>
+                                  <Badge variant="destructive" className="text-base">
+                                    {mb.family}
+                                  </Badge>
+                                </div>
+                              )}
+                              {mb.last_seen && (
+                                <div className="bg-muted rounded-lg p-4">
+                                  <div className="text-xs text-muted-foreground mb-2">Last Seen</div>
+                                  <div className="text-sm">{formatDateTime(mb.last_seen)}</div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="bg-muted rounded-lg p-4">
+                              <div className="text-xs text-muted-foreground mb-2">Status</div>
+                              <div className="text-sm">No MalwareBazaar record found for this hash</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* OnionSearch */}
+                  {(event as any).raw?.onionsearch && (
                     <div>
                       <div className="flex items-center gap-2 text-sm font-medium mb-3">
                         <AlertTriangle className="h-4 w-4" />
-                        MalwareBazaar
+                        OnionSearch
                       </div>
-                      <div className="space-y-4">
-                        {event.ti.malwarebazaar.family && (
-                          <div className="bg-muted rounded-lg p-4">
-                            <div className="text-xs text-muted-foreground mb-2">Malware Family</div>
-                            <Badge variant="destructive" className="text-base">
-                              {event.ti.malwarebazaar.family}
-                            </Badge>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-xs text-muted-foreground mb-2">Darkweb Mentions</div>
+                          <Badge variant="outline" className="text-lg">
+                            {Number((event as any).raw.onionsearch?.mentions) || 0}
+                          </Badge>
+                        </div>
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-xs text-muted-foreground mb-2">Query</div>
+                          <div className="font-mono text-xs break-all">
+                            {String((event as any).raw.onionsearch?.query || '')}
                           </div>
-                        )}
-                        {event.ti.malwarebazaar.hash && (
-                          <div className="bg-muted rounded-lg p-4">
-                            <div className="text-xs text-muted-foreground mb-2">Hash</div>
-                            <div className="font-mono text-xs break-all">{event.ti.malwarebazaar.hash}</div>
-                          </div>
-                        )}
-                        {event.ti.malwarebazaar.last_seen && (
-                          <div className="bg-muted rounded-lg p-4">
-                            <div className="text-xs text-muted-foreground mb-2">Last Seen</div>
-                            <div className="text-sm">{formatDateTime(event.ti.malwarebazaar.last_seen)}</div>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* MITRE ATT&CK */}
-                  {event.ti.mitre && event.ti.mitre.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 text-sm font-medium mb-3">
-                        <Shield className="h-4 w-4" />
-                        MITRE ATT&CK Tactics
-                      </div>
-                      <div className="space-y-2">
-                        {event.ti.mitre.map((mitre, idx) => (
-                          <div key={idx} className="bg-muted rounded-lg p-3 flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{mitre.tactic}</div>
-                              <div className="text-xs text-muted-foreground">Technique: {mitre.technique}</div>
-                              {mitre.id && (
-                                <div className="text-xs text-muted-foreground">Technique ID: {mitre.id}</div>
-                              )}
+                  {(event.sensor_type === 'cowrie' && (event as any).raw && (event as any).raw.mitre) ? (
+                    (() => {
+                      const m = (event as any).raw.mitre as any;
+                      const tactics: string[] = Array.isArray(m?.tactics) ? m.tactics : [];
+                      const names: string[] = Array.isArray(m?.names) ? m.names : [];
+                      const ids: string[] = Array.isArray(m?.ids) ? m.ids : [];
+                      const items = (names.length > 0 || tactics.length > 0)
+                        ? (names.length >= tactics.length ? names.length : tactics.length)
+                        : 0;
+                      if (items === 0 && event.ti?.mitre && event.ti.mitre.length > 0) {
+                        return (
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                              <Shield className="h-4 w-4" />
+                              MITRE ATT&CK Tactics
                             </div>
-                            <Badge variant="secondary">{mitre.technique}</Badge>
+                            <div className="space-y-2">
+                              {event.ti.mitre.map((mitre, idx) => (
+                                <div key={idx} className="bg-muted rounded-lg p-3 flex justify-between items-center">
+                                  <div>
+                                    <div className="font-medium">{mitre.tactic}</div>
+                                    <div className="text-xs text-muted-foreground">Technique: {mitre.technique}</div>
+                                    {mitre.id && (
+                                      <div className="text-xs text-muted-foreground">Technique ID: {mitre.id}</div>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary">{mitre.technique}</Badge>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
+                        );
+                      }
+                      return (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                            <Shield className="h-4 w-4" />
+                            MITRE ATT&CK Tactics
+                          </div>
+                          <div className="space-y-2">
+                            {Array.from({ length: items }).map((_, idx) => {
+                              const tactic = tactics[idx] || names[idx] || 'Unknown';
+                              const technique = names[idx] || tactics[idx] || 'Unknown';
+                              const id = ids[idx];
+                              return (
+                                <div key={idx} className="bg-muted rounded-lg p-3 flex justify-between items-center">
+                                  <div>
+                                    <div className="font-medium">{tactic}</div>
+                                    <div className="text-xs text-muted-foreground">Technique: {technique}</div>
+                                    {id && (
+                                      <div className="text-xs text-muted-foreground">Technique ID: {id}</div>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary">{technique}</Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    event.ti.mitre && event.ti.mitre.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                          <Shield className="h-4 w-4" />
+                          MITRE ATT&CK Tactics
+                        </div>
+                        <div className="space-y-2">
+                          {event.ti.mitre.map((mitre, idx) => (
+                            <div key={idx} className="bg-muted rounded-lg p-3 flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">{mitre.tactic}</div>
+                                <div className="text-xs text-muted-foreground">Technique: {mitre.technique}</div>
+                                {mitre.id && (
+                                  <div className="text-xs text-muted-foreground">Technique ID: {mitre.id}</div>
+                                )}
+                              </div>
+                              <Badge variant="secondary">{mitre.technique}</Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )
                   )}
                 </>
               ) : (
