@@ -1161,10 +1161,28 @@ export const demoAdapter = {
       .sort((a, b) => (b.detections || 0) - (a.detections || 0) || b.count - a.count)
       .slice(0, 10);
 
+    const darkWebExposure = filtered.reduce((sum, e) => {
+      const mentions = Number(((e.raw as any)?.onionsearch?.mentions) || 0);
+      return sum + (mentions > 0 ? 1 : 0);
+    }, 0);
+
+    const darkWebMentionsTotal = filtered.reduce((sum, e) => {
+      const mentions = Number(((e.raw as any)?.onionsearch?.mentions) || 0);
+      return sum + (Number.isFinite(mentions) ? mentions : 0);
+    }, 0);
+
+    const indicatorsSearched = filtered.reduce((sum, e) => {
+      const q = (e.raw as any)?.onionsearch?.query;
+      return sum + (q ? 1 : 0);
+    }, 0);
+
     return {
       maliciousIps,
       avgVTDetections: Math.round(avgVTDetections * 10) / 10,
       malwareFamilyCount,
+      darkWebExposure,
+      darkWebMentionsTotal,
+      indicatorsSearched,
       topMalwareFamilies,
       topMaliciousIps,
       topUploads,

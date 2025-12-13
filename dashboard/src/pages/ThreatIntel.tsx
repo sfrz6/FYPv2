@@ -3,7 +3,7 @@ import { ChartCard } from '@/components/dashboard/ChartCard';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Shield, AlertTriangle, Bug } from 'lucide-react';
+import { Shield, AlertTriangle, Bug, Globe, MessageSquare, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -115,6 +115,33 @@ export default function ThreatIntel() {
           </div>
         )}
       </ChartCard>
+
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold text-foreground">Dark Web Intelligence</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <KpiCard
+            title="Dark Web Exposure"
+            subtitle="Indicators with dark web presence"
+            value={tiData?.darkWebExposure || 0}
+            icon={Globe}
+            loading={isLoading}
+          />
+          <KpiCard
+            title="Dark Web Mentions"
+            subtitle="Total mentions across all indicators"
+            value={tiData?.darkWebMentionsTotal || 0}
+            icon={MessageSquare}
+            loading={isLoading}
+          />
+          <KpiCard
+            title="Indicators Searched"
+            subtitle="Hashes and filenames queried"
+            value={tiData?.indicatorsSearched || 0}
+            icon={Search}
+            loading={isLoading}
+          />
+        </div>
+      </div>
 
       {/* Top Malicious IPs Table */}
       <ChartCard

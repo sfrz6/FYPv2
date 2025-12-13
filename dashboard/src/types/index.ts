@@ -97,6 +97,9 @@ export type TISummary = {
   maliciousIps: number;
   avgVTDetections: number;
   malwareFamilyCount?: number;
+  darkWebExposure?: number;
+  darkWebMentionsTotal?: number;
+  indicatorsSearched?: number;
   topMalwareFamilies: Array<{ family: string; count: number }>;
   topMaliciousIps: Array<{
     ip: string;

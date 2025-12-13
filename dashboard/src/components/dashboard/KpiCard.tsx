@@ -7,6 +7,7 @@ import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 interface KpiCardProps {
   title: string;
+  subtitle?: string;
   value: number;
   icon: LucideIcon;
   trend?: number;
@@ -15,7 +16,7 @@ interface KpiCardProps {
   sparklineData?: Array<{ value: number }>;
 }
 
-export function KpiCard({ title, value, icon: Icon, trend, loading, sparkline, sparklineData }: KpiCardProps) {
+export function KpiCard({ title, subtitle, value, icon: Icon, trend, loading, sparkline, sparklineData }: KpiCardProps) {
   if (loading) {
     return (
       <Card className="card-hover">
@@ -43,6 +44,11 @@ export function KpiCard({ title, value, icon: Icon, trend, loading, sparkline, s
         <div className="text-3xl font-bold mb-2">
           <CountUp end={value} duration={1} separator="," />
         </div>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mb-1">
+            {subtitle}
+          </p>
+        )}
         {trend !== undefined && (
           <p className="text-xs text-muted-foreground">
             {trend > 0 ? '+' : ''}
