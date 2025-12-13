@@ -107,7 +107,7 @@ export default function Sensors() {
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
           <Activity className="h-8 w-8 text-primary" />
-          Sensor Health & Status
+          Sensors status
         </h1>
         <p className="text-muted-foreground">
           Monitor deployed honeypot sensors and their activity

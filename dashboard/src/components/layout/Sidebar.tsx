@@ -48,13 +48,6 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
-          <span>Demo Mode Active</span>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { ChartCard } from './ChartCard';
 import { useAttacksOverTimeWithRange } from '@/hooks/useHoneypotData';
-import { downloadCSV, downloadJSON } from '@/utils/export';
 import { getTimeRangeFromPreset } from '@/utils/date';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
@@ -80,8 +79,6 @@ export function AttacksTrend() {
     <ChartCard
       title="Attacks Over Time"
       description="Time series of attack events by sensor"
-      onExportCSV={() => downloadCSV(chartData, 'attacks-over-time.csv')}
-      onExportJSON={() => downloadJSON(chartData, 'attacks-over-time.json')}
     >
       <div className="flex justify-between items-center mb-2 gap-4 flex-wrap">
         <Select
